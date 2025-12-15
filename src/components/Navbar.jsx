@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, Menu, X, User, Star } from "lucide-react";
+import { Search, Menu, X, User, Star, LogOut } from "lucide-react";
 
 const Navbar = () => {
   const location = useLocation();
@@ -8,6 +8,9 @@ const Navbar = () => {
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // 👉 LẤY USER ĐÃ LOGIN
+  const user = JSON.parse(localStorage.getItem("user"));
 
   const navLinks = [
     { name: "Phim", path: "/movies" },
@@ -21,7 +24,14 @@ const Navbar = () => {
     if (searchQuery.trim()) {
       navigate(`/movies?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery("");
+      setIsMenuOpen(false);
     }
+  };
+
+  // 👉 ĐĂNG XUẤT
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    navigate("/auth");
   };
 
   return (
@@ -73,10 +83,27 @@ const Navbar = () => {
             </button>
           </form>
 
-          {/* Login */}
-          <Link to="/auth" className="btn btn-outline-light">
-            <User size={18} />
-          </Link>
+          {/* ===== AUTH AREA ===== */}
+          {!user ? (
+            // ❌ CHƯA LOGIN
+            <Link to="/auth" className="btn btn-outline-light">
+              <User size={18} />
+            </Link>
+          ) : (
+            // ✅ ĐÃ LOGIN
+            <div className="d-flex align-items-center gap-2">
+              <span className="text-light small">
+                Xin chào, <strong>{user.fullName || user.email}</strong>
+              </span>
+              <button
+                className="btn btn-outline-danger btn-sm"
+                onClick={handleLogout}
+                title="Đăng xuất"
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
+          )}
 
           {/* Book */}
           <Link to="/movies" className="btn btn-warning ms-3">

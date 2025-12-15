@@ -200,3 +200,23 @@ export const seatLayout = {
   vipRows: ['E', 'F', 'G'],
   occupiedSeats: ['A3', 'A4', 'B7', 'C5', 'C6', 'D8', 'E4', 'E5', 'F6', 'F7', 'G3', 'H9', 'I2', 'J10'],
 };
+export const combos = [
+  {
+    id: 1,
+    name: "Combo Bắp + Nước",
+    price: 65000,
+    image: "https://via.placeholder.com/150x100?text=Combo+1",
+  },
+  {
+    id: 2,
+    name: "Combo Gia Đình",
+    price: 120000,
+    image: "https://via.placeholder.com/150x100?text=Combo+2",
+  },
+  {
+    id: 3,
+    name: "Combo Couple",
+    price: 90000,
+    image: "https://via.placeholder.com/150x100?text=Combo+3",
+  },
+];

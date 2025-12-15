@@ -12,17 +12,19 @@ import {
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import SeatSelection from "../components/SeatSelection";
-import { movies, cinemas, showtimes, seatLayout } from "../data/movies";
+import { movies, cinemas, showtimes, seatLayout, combos } from "../data/movies";
 
 const MovieDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const movie = movies.find((m) => m.id === parseInt(id));
 
+  const [selectedCity, setSelectedCity] = useState("all");
   const [selectedCinema, setSelectedCinema] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedShowtime, setSelectedShowtime] = useState(null);
   const [selectedSeats, setSelectedSeats] = useState([]);
+  const [selectedCombos, setSelectedCombos] = useState([]);
   const [bookingStep, setBookingStep] = useState(1);
 
   if (!movie) {
@@ -143,7 +145,6 @@ const MovieDetail = () => {
                 </p>
 
                 <div className="d-flex gap-3 mt-4">
-                  <button className="btn btn-danger btn-lg">Đặt vé ngay</button>
                   <button className="btn btn-outline-light btn-lg">
                     ▶ Xem trailer
                   </button>
@@ -153,19 +154,21 @@ const MovieDetail = () => {
           </div>
         </div>
       </section>
-          {/* Đặt vé Section */}
+      {/* Đặt vé Section */}
       <section className="container my-5">
-        <h2 className="text-center fw-bold mb-4">Đặt vé xem phim</h2>
+        <h2 className="text-center fw-bold mb-4">
+          Vui lòng hoàn thành các bước bên dưới để đặt vé:
+        </h2>
 
         {/* Steps */}
         <div className="d-flex justify-content-center gap-4 mb-5">
-          {[1, 2, 3].map((step) => (
+          {[1, 2, 3, 4].map((step) => (
             <div
               key={step}
               className={`rounded-circle d-flex align-items-center justify-content-center ${
                 bookingStep >= step ? "bg-primary text-white" : "bg-light"
               }`}
-              style={{ width: 40, height: 40 }}
+              style={{ width: 42, height: 42 }}
             >
               {step}
             </div>
@@ -173,25 +176,46 @@ const MovieDetail = () => {
         </div>
 
         {/* STEP 1 – CHỌN RẠP */}
+        <h4 className="mb-3 text-center">Chọn rạp gần bạn</h4>
+        {/* Filter*/}
+        <div className="d-flex justify-content-center mb-4">
+          <select
+            className="form-select w-auto"
+            value={selectedCity}
+            onChange={(e) => setSelectedCity(e.target.value)}
+          >
+            <option value="all">Tất cả khu vực</option>
+            {[...new Set(cinemas.map((c) => c.city))].map((city) => (
+              <option key={city} value={city}>
+                {city}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* cinemas*/}
         {bookingStep === 1 && (
           <div className="row g-4">
-            {cinemas.map((cinema) => (
-              <div className="col-md-3" key={cinema.id}>
-                <div
-                  className="card h-100 cursor-pointer"
-                  onClick={() => {
-                    setSelectedCinema(cinema.id);
-                    setBookingStep(2);
-                  }}
-                >
-                  <img src={cinema.image} className="card-img-top" />
-                  <div className="card-body">
-                    <h5 className="card-title">{cinema.name}</h5>
-                    <p className="card-text small">{cinema.address}</p>
+            {cinemas
+              .filter((c) => selectedCity === "all" || c.city === selectedCity)
+              .map((cinema) => (
+                <div className="col-md-3" key={cinema.id}>
+                  <div
+                    className="card h-100"
+                    style={{ cursor: "pointer" }}
+                    onClick={() => {
+                      setSelectedCinema(cinema.id);
+                      setBookingStep(2);
+                    }}
+                  >
+                    <img src={cinema.image} className="card-img-top" />
+                    <div className="card-body">
+                      <h6 className="fw-bold">{cinema.name}</h6>
+                      <p className="small text-muted">{cinema.address}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         )}
 
@@ -261,29 +285,134 @@ const MovieDetail = () => {
 
             <div className="col-md-4">
               <div className="card p-3">
-                <h5 className="fw-bold mb-3">Thông tin đặt vé</h5>
-
                 <p>
-                  <strong>Phim:</strong> {movie.title}
-                </p>
-                <p>
-                  <strong>Ghế:</strong> {selectedSeats.join(", ")}
-                </p>
-                <p className="fs-4 fw-bold text-primary">
-                  {calculateTotal().toLocaleString("vi-VN")}đ
+                  <strong>Đã chọn:</strong> {selectedSeats.length} ghế
                 </p>
 
                 <button
                   className="btn btn-primary w-100"
                   disabled={selectedSeats.length === 0}
-                  onClick={handleBooking}
+                  onClick={() => setBookingStep(4)}
+                >
+                  Tiếp tục
+                </button>
+
+                <button
+                  className="btn btn-outline-secondary w-100 mt-2"
+                  onClick={() => setBookingStep(2)}
+                >
+                  Quay lại
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4 – FOOD */}
+        {bookingStep === 4 && (
+          <div className="row g-4">
+            {/* COMBO */}
+            <div className="col-md-7">
+              <h5 className="fw-bold mb-3">Chọn đồ ăn / nước uống</h5>
+              <div className="row g-3">
+                {combos.map((combo) => (
+                  <div className="col-md-4" key={combo.id}>
+                    <div
+                      className={`card h-100 ${
+                        selectedCombos.includes(combo.id)
+                          ? "border-primary"
+                          : ""
+                      }`}
+                      style={{ cursor: "pointer" }}
+                      onClick={() =>
+                        setSelectedCombos((prev) =>
+                          prev.includes(combo.id)
+                            ? prev.filter((id) => id !== combo.id)
+                            : [...prev, combo.id]
+                        )
+                      }
+                    >
+                      <img src={combo.image} className="card-img-top" />
+                      <div className="card-body text-center">
+                        <h6>{combo.name}</h6>
+                        <p className="text-primary fw-bold">
+                          {combo.price.toLocaleString()}đ
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* SUMMARY */}
+            <div className="col-md-5">
+              <div className="card p-3">
+                <h5 className="fw-bold mb-3">Chi tiết đơn hàng</h5>
+
+                <p>
+                  <strong>Ghế:</strong> {selectedSeats.join(", ")}
+                </p>
+
+                <p>
+                  <strong>Combo:</strong>
+                </p>
+                <ul>
+                  {selectedCombos.map((id) => {
+                    const c = combos.find((x) => x.id === id);
+                    return <li key={id}>{c.name}</li>;
+                  })}
+                </ul>
+
+                <hr />
+
+                <p className="fs-4 fw-bold text-primary">
+                  {(
+                    calculateTotal() +
+                    selectedCombos.reduce(
+                      (sum, id) => sum + combos.find((c) => c.id === id).price,
+                      0
+                    )
+                  ).toLocaleString("vi-VN")}
+                  đ
+                </p>
+
+                <button
+                  className="btn btn-success w-100"
+                  onClick={() =>
+                    navigate("/checkout", {
+                      state: {
+                        movie: {
+                          id: movie.id,
+                          title: movie.title,
+                          poster: movie.poster,
+                          duration: movie.duration,
+                          ageRating: movie.ageRating,
+                        },
+                        cinema: cinemas.find((c) => c.id === selectedCinema),
+                        date: selectedDate,
+                        showtime: showtimes.find(
+                          (s) => s.id === selectedShowtime
+                        ),
+                        seats: selectedSeats,
+                        totalAmount:
+                          calculateTotal() +
+                          selectedCombos.reduce(
+                            (sum, id) =>
+                              sum + combos.find((c) => c.id === id).price,
+                            0
+                          ),
+                        combos: selectedCombos,
+                      },
+                    })
+                  }
                 >
                   Thanh toán
                 </button>
 
                 <button
                   className="btn btn-outline-secondary w-100 mt-2"
-                  onClick={() => setBookingStep(2)}
+                  onClick={() => setBookingStep(3)}
                 >
                   Quay lại
                 </button>

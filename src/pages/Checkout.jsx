@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   CreditCard,
   Wallet,
@@ -7,45 +7,42 @@ import {
   CheckCircle,
   ArrowLeft,
   Loader2,
-} from 'lucide-react';
+} from "lucide-react";
 
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
-
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 const paymentMethods = [
-  { id: 'momo', name: 'Ví MoMo', icon: Wallet },
-  { id: 'zalopay', name: 'ZaloPay', icon: Wallet },
-  { id: 'vnpay', name: 'VNPay', icon: Building2 },
-  { id: 'card', name: 'Thẻ tín dụng / ghi nợ', icon: CreditCard },
+  { id: "momo", name: "Ví MoMo", icon: Wallet },
+  { id: "zalopay", name: "ZaloPay", icon: Wallet },
+  { id: "vnpay", name: "VNPay", icon: Building2 },
+  { id: "card", name: "Thẻ tín dụng / ghi nợ", icon: CreditCard },
 ];
 
 const Checkout = () => {
-  const [paymentMethod, setPaymentMethod] = useState('momo');
+  const [paymentMethod, setPaymentMethod] = useState("momo");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
-  const { toast } = useToast();
-  
-
+  const user = JSON.parse(localStorage.getItem("user"));
   const bookingData = location.state;
 
   /* ===== Auth guard ===== */
   useEffect(() => {
-    if (!authLoading && !user) {
-      alert('Vui lòng đăng nhập để thanh toán');
-      navigate('/auth', { state: { from: location } });
+    if (!user) {
+      navigate("/auth", {
+        state: { from: location }, // để sau login quay lại checkout
+      });
     }
-  }, [user, authLoading, navigate, location, toast]);
-
+  }, [user, navigate, location]);
   /* ===== Missing booking data ===== */
   useEffect(() => {
-    if (!bookingData) navigate('/movies');
+    if (!bookingData) navigate("/movies");
   }, [bookingData, navigate]);
 
-  if (!bookingData || authLoading) {
+  if (!user || !bookingData) {
     return (
       <div className="vh-100 d-flex align-items-center justify-content-center">
         <div className="spinner-border text-primary" />
@@ -55,35 +52,10 @@ const Checkout = () => {
 
   /* ===== Payment handler ===== */
   const handlePayment = async () => {
-    if (!user) return;
-
     setIsProcessing(true);
-    await new Promise((r) => setTimeout(r, 2000));
 
-    const { error } = await supabase.from('bookings').insert({
-      user_id: user.id,
-      movie_title: bookingData.movie.title,
-      movie_poster: bookingData.movie.poster,
-      cinema_name: bookingData.cinema.name,
-      show_date: bookingData.date,
-      showtime: `${bookingData.showtime.time} - ${bookingData.showtime.type}`,
-      seats: bookingData.seats,
-      total_amount: bookingData.totalAmount,
-      payment_method: paymentMethods.find(
-        (m) => m.id === paymentMethod
-      )?.name,
-      payment_status: 'paid',
-    });
-
-    if (error) {
-      toast({
-        title: 'Lỗi',
-        description: 'Không thể lưu thông tin đặt vé',
-        variant: 'destructive',
-      });
-      setIsProcessing(false);
-      return;
-    }
+    // Giả lập gọi API thanh toán
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     setIsProcessing(false);
     setIsSuccess(true);
@@ -105,23 +77,27 @@ const Checkout = () => {
             <div className="card-body text-start">
               <h5 className="card-title mb-3">Chi tiết vé</h5>
 
-              <p><strong>Phim:</strong> {bookingData.movie.title}</p>
-              <p><strong>Rạp:</strong> {bookingData.cinema.name}</p>
               <p>
-                <strong>Ngày:</strong>{' '}
-                {new Date(bookingData.date).toLocaleDateString('vi-VN')}
+                <strong>Phim:</strong> {bookingData.movie.title}
               </p>
               <p>
-                <strong>Suất:</strong>{' '}
-                {bookingData.showtime.time} - {bookingData.showtime.type}
+                <strong>Rạp:</strong> {bookingData.cinema.name}
               </p>
               <p>
-                <strong>Ghế:</strong> {bookingData.seats.join(', ')}
+                <strong>Ngày:</strong>{" "}
+                {new Date(bookingData.date).toLocaleDateString("vi-VN")}
+              </p>
+              <p>
+                <strong>Suất:</strong> {bookingData.showtime.time} -{" "}
+                {bookingData.showtime.type}
+              </p>
+              <p>
+                <strong>Ghế:</strong> {bookingData.seats.join(", ")}
               </p>
 
               <hr />
               <h4 className="text-end text-primary">
-                {bookingData.totalAmount.toLocaleString('vi-VN')}đ
+                {bookingData.totalAmount.toLocaleString("vi-VN")}đ
               </h4>
             </div>
           </div>
@@ -129,13 +105,13 @@ const Checkout = () => {
           <div className="d-flex gap-3 justify-content-center">
             <button
               className="btn btn-primary"
-              onClick={() => navigate('/booking-history')}
+              onClick={() => navigate("/booking-history")}
             >
               Lịch sử đặt vé
             </button>
             <button
               className="btn btn-outline-secondary"
-              onClick={() => navigate('/')}
+              onClick={() => navigate("/")}
             >
               Trang chủ
             </button>
@@ -151,10 +127,7 @@ const Checkout = () => {
     <>
       <Navbar />
       <div className="container py-5">
-        <button
-          className="btn btn-link mb-4 p-0"
-          onClick={() => navigate(-1)}
-        >
+        <button className="btn btn-link mb-4 p-0" onClick={() => navigate(-1)}>
           <ArrowLeft size={18} /> Quay lại
         </button>
 
@@ -171,11 +144,9 @@ const Checkout = () => {
                     <label
                       key={method.id}
                       className={`d-flex align-items-center border rounded p-3 mb-3 ${
-                        paymentMethod === method.id
-                          ? 'border-primary'
-                          : ''
+                        paymentMethod === method.id ? "border-primary" : ""
                       }`}
-                      style={{ cursor: 'pointer' }}
+                      style={{ cursor: "pointer" }}
                     >
                       <input
                         type="radio"
@@ -190,7 +161,7 @@ const Checkout = () => {
                 })}
 
                 <div className="alert alert-secondary mt-3">
-                  Đây là bản demo – thanh toán được mô phỏng
+                  demo thanh toán
                 </div>
               </div>
             </div>
@@ -208,17 +179,17 @@ const Checkout = () => {
                   className="img-fluid rounded mb-3"
                 />
 
-                <p><strong>{bookingData.movie.title}</strong></p>
-                <p className="text-muted">
-                  {bookingData.cinema.name}
+                <p>
+                  <strong>{bookingData.movie.title}</strong>
                 </p>
+                <p className="text-muted">{bookingData.cinema.name}</p>
 
                 <hr />
 
                 <div className="d-flex justify-content-between">
                   <span>Tổng tiền</span>
                   <strong className="fs-4 text-primary">
-                    {bookingData.totalAmount.toLocaleString('vi-VN')}đ
+                    {bookingData.totalAmount.toLocaleString("vi-VN")}đ
                   </strong>
                 </div>
 
@@ -229,11 +200,14 @@ const Checkout = () => {
                 >
                   {isProcessing ? (
                     <>
-                      <Loader2 size={18} className="me-2 spinner-border spinner-border-sm" />
+                      <Loader2
+                        size={18}
+                        className="me-2 spinner-border spinner-border-sm"
+                      />
                       Đang xử lý...
                     </>
                   ) : (
-                    'Thanh toán'
+                    "Thanh toán"
                   )}
                 </button>
               </div>
