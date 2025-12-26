@@ -1,22 +1,22 @@
-# dependencies
+# node
 node_modules/
-
-# build
-dist/
 
 # env
 .env
-.env.*
+.env.local
+
+# build
+dist/
+build/
 
 # logs
 npm-debug.log*
 yarn-debug.log*
-yarn-error.log*
-
-# editor
-.vscode/
-.idea/
 
 # OS
 .DS_Store
 Thumbs.db
+
+# PHP
+cinebook-api/vendor/
+cinebook-api/config/database.php

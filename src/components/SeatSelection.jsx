@@ -1,75 +1,127 @@
-import { seatLayout } from "../data/movies";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
-const SeatSelection = ({ selectedSeats, onSeatSelect }) => {
-  const toggleSeat = (seat) => {
-    if (seatLayout.occupiedSeats.includes(seat)) return;
+const API_BASE = "http://localhost/cinebook-api/api";
 
-    if (selectedSeats.includes(seat)) {
-      onSeatSelect(selectedSeats.filter((s) => s !== seat));
-    } else {
-      onSeatSelect([...selectedSeats, seat]);
+const SeatSelection = ({ showtimeId, selectedSeats, onSeatSelect }) => {
+  const [seats, setSeats] = useState([]);
+
+  const sessionId =
+    localStorage.getItem("seat_session") ||
+    (() => {
+      const s = crypto.randomUUID();
+      localStorage.setItem("seat_session", s);
+      return s;
+    })();
+
+  /* ===== LOAD SEATS ===== */
+  const loadSeats = () => {
+    if (!showtimeId) return;
+
+    fetch(`${API_BASE}/seats?showtime_id=${showtimeId}&session_id=${sessionId}`)
+      .then((res) => res.json())
+      .then(setSeats);
+  };
+
+  useEffect(() => {
+    loadSeats();
+  }, [showtimeId]);
+
+  /* ===== HOLD ===== */
+  const holdSeat = async (seatId) => {
+    const res = await fetch(`${API_BASE}/seat-hold/index.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "hold",
+        showtime_id: showtimeId,
+        seat_id: seatId,
+        session_id: sessionId,
+      }),
+    });
+
+    if (res.status === 409) {
+      toast.error("Ghế đã được giữ bởi người khác");
+      loadSeats();
+      return false;
     }
+
+    if (!res.ok) {
+      toast.error("Lỗi hệ thống");
+      return false;
+    }
+
+    toast.success("Đã giữ ghế (5 phút)");
+    return true;
+  };
+
+  /* ===== RELEASE ===== */
+  const releaseSeat = async (seatId) => {
+    await fetch(`${API_BASE}/seat-hold/index.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "release",
+        showtime_id: showtimeId,
+        seat_id: seatId,
+        session_id: sessionId,
+      }),
+    });
+
+    toast("Đã bỏ chọn ghế", { icon: "↩️" });
+  };
+
+  /* ===== CLICK ===== */
+  const toggleSeat = async (seat) => {
+    if (seat.status === "booked" || seat.status === "holding") {
+      toast.error("Ghế đã được giữ bởi người khác");
+      return;
+    }
+
+    // BỎ CHỌN
+    if (selectedSeats.includes(seat.id)) {
+      await releaseSeat(seat.id);
+      onSeatSelect(selectedSeats.filter((id) => id !== seat.id));
+      loadSeats();
+      return;
+    }
+
+    // CHỌN
+    const ok = await holdSeat(seat.id);
+    if (!ok) return;
+
+    onSeatSelect([...selectedSeats, seat.id]);
+    loadSeats();
   };
 
   return (
-    <div>
-      <h4 className="text-center fw-bold mb-4">Chọn ghế</h4>
+    <div className="grid grid-cols-10 gap-2">
+      {seats.map((seat) => {
+        const isSelected = selectedSeats.includes(seat.id);
 
-      {/* Screen */}
-      <div className="bg-secondary text-center text-white py-2 rounded mb-4">
-        MÀN HÌNH
-      </div>
+        let bg = "bg-gray-300";
+        if (seat.status === "booked") bg = "bg-red-500";
+        if (seat.status === "holding") bg = "bg-yellow-400";
+        if (seat.status === "holding_me") bg = "bg-green-400";
+        if (isSelected) bg = "bg-green-600";
 
-      {/* Seats */}
-      <div className="d-flex flex-column align-items-center gap-2">
-        {seatLayout.rows.map((row) => (
-          <div key={row} className="d-flex align-items-center gap-2">
-            <strong style={{ width: 20 }}>{row}</strong>
+        const isDisabled =
+          seat.status === "booked" ||
+          (seat.status === "holding" && !isSelected);
 
-            {Array.from({ length: seatLayout.seatsPerRow }).map((_, i) => {
-              const seat = `${row}${i + 1}`;
-              const isOccupied = seatLayout.occupiedSeats.includes(seat);
-              const isSelected = selectedSeats.includes(seat);
-              const isVIP = seatLayout.vipRows.includes(row);
-
-              let className = "btn btn-sm";
-
-              if (isOccupied) className += " btn-secondary disabled";
-              else if (isSelected) className += " btn-primary";
-              else if (isVIP) className += " btn-warning";
-              else className += " btn-outline-secondary";
-
-              return (
-                <button
-                  key={seat}
-                  className={className}
-                  style={{ width: 32, height: 32, padding: 0 }}
-                  onClick={() => toggleSeat(seat)}
-                >
-                  {i + 1}
-                </button>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-
-      {/* Legend */}
-      <div className="d-flex justify-content-center gap-4 mt-4 flex-wrap">
-        <Legend color="btn-outline-secondary" label="Ghế thường" />
-        <Legend color="btn-warning" label="Ghế VIP" />
-        <Legend color="btn-primary" label="Đang chọn" />
-        <Legend color="btn-secondary" label="Đã đặt" />
-      </div>
+        return (
+          <button
+            key={seat.id}
+            disabled={isDisabled}
+            onClick={() => toggleSeat(seat)}
+            className={`p-2 rounded text-xs text-white transition ${bg}`}
+          >
+            {seat.seat_code}
+          </button>
+        );
+      })}
     </div>
   );
 };
-
-const Legend = ({ color, label }) => (
-  <div className="d-flex align-items-center gap-2">
-    <button className={`btn btn-sm ${color}`} disabled></button>
-    <small>{label}</small>
-  </div>
-);
 
 export default SeatSelection;

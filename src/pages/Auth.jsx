@@ -25,12 +25,15 @@ const Auth = () => {
 
     // 👉 DEMO login / register
     setTimeout(() => {
-      const userData = {
-        email,
-        fullName: fullName || "User Demo",
+      const userDemo = {
+        id: 2,
+        name: "User Demo",
+        email: "demo@gmail.com",
       };
 
-      localStorage.setItem("user", JSON.stringify(userData));
+      // ✅ LƯU ĐÚNG BIẾN
+      localStorage.setItem("user", JSON.stringify(userDemo));
+
       setIsLoading(false);
       navigate("/");
     }, 1000);
@@ -46,9 +49,7 @@ const Auth = () => {
             <h2 className="fw-bold mb-0">CINESTAR</h2>
           </div>
 
-          <h4 className="fw-bold">
-            {isLogin ? "ĐĂNG NHẬP" : "ĐĂNG KÝ"}
-          </h4>
+          <h4 className="fw-bold">{isLogin ? "ĐĂNG NHẬP" : "ĐĂNG KÝ"}</h4>
           <p className="text-muted small">
             {isLogin
               ? "Đăng nhập để đặt vé và xem lịch sử"
@@ -119,11 +120,7 @@ const Auth = () => {
                     className="btn btn-outline-secondary"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    {showPassword ? (
-                      <EyeOff size={16} />
-                    ) : (
-                      <Eye size={16} />
-                    )}
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </div>
